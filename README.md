@@ -1,2 +1,2 @@
-# script
-auto script zoo
+# Jiho's script zoo
+bash <(wget -qO- [Script URL])
