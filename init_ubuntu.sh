@@ -16,7 +16,8 @@ sudo apt-get install -y \
     curl \
     gnupg \
     openssh-server \
-    wireguard
+    wireguard \
+    resolvconf
     
 # install docker
 sudo install -m 0755 -d /etc/apt/keyrings
