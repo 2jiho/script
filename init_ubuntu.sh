@@ -1,4 +1,8 @@
 #/bin/bash
+# ---------------------------------------------------------------------------------
+# install openssh-server, docker, nvidia-docker, wireguard, nomachine, tailscale
+# Disable automatic printer search
+# ---------------------------------------------------------------------------------
 
 # Disable automatic printer search
 sudo systemctl stop cups-browsed
