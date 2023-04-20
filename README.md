@@ -14,5 +14,5 @@ bash <(wget -qO- https://raw.githubusercontent.com/2jiho/script/main/init_ubuntu
 sshpass -p $PASSWOED ssh -t user@address -o StrictHostKeyChecking=no "sudo -S <<< $PASSWORD hostname; sudo $CMD"
 
 # without sudo
-sshpass -p $PASSWOED ssh -t user@address -o StrictHostKeyChecking=no "$CMD"
+sshpass -p $PASSWOED ssh -t user@address -o StrictHostKeyChecking=no "hostname; $CMD"
 ```
