@@ -7,7 +7,8 @@
 # Disable automatic printer search
 sudo systemctl stop cups-browsed
 sudo systemctl disable cups-browsed
-
+# Disable apport
+sudo sed -i 's/enabled=1/enabled=0/' /etc/default/apport
 
 sudo apt update
 sudo apt upgrade -y
