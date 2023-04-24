@@ -2,11 +2,13 @@
 # ---------------------------------------------------------------------------------
 # install openssh-server, docker, nvidia-docker, wireguard, nomachine, tailscale
 # Disable automatic printer search
+# Disable apport (ubuntu error report)
 # ---------------------------------------------------------------------------------
 
 # Disable automatic printer search
 sudo systemctl stop cups-browsed
 sudo systemctl disable cups-browsed
+
 # Disable apport
 sudo sed -i 's/enabled=1/enabled=0/' /etc/default/apport
 
