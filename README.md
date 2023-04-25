@@ -2,6 +2,9 @@
 
 ### run script
 ```bash
+# test
+wget -O - https://sh.lum.kr/ | bash
+
 bash <(wget -qO- [Script URL])
 
 # example
