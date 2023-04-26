@@ -20,7 +20,8 @@ sudo apt-get install -y \
     gnupg \
     openssh-server \
     wireguard \
-    resolvconf
+    resolvconf \
+    vlc
     
 # install docker
 sudo install -m 0755 -d /etc/apt/keyrings
