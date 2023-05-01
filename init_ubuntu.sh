@@ -47,10 +47,10 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
 # install nomachine
-wget https://download.nomachine.com/download/8.4/Linux/nomachine_8.4.2_1_x86_64.tar.gz
-sudo mv nomachine_8.4.2_1_x86_64.tar.gz /usr
+wget https://www.nomachine.com/free/linux/64/tar -O nomachine.tar.gz
+sudo mv nomachine.tar.gz /usr
 cd /usr
-sudo tar zxvf nomachine_8.4.2_1_x86_64.tar.gz
+sudo tar zxvf nomachine.tar.gz
 sudo /usr/NX/nxserver --install
 
 # install tailscale
