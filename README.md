@@ -3,7 +3,7 @@
 ### run script
 ```bash
 # test
-wget -O - https://sh.lum.kr/ | bash
+wget -O - https://sh.2jiho.com/ | bash
 
 bash <(wget -qO- [Script URL])
 
