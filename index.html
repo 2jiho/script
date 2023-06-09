@@ -1,12 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env python3
+import subprocess
+import sys
 
-# sudo apt install git
+subprocess.call([sys.executable, "-m", "pip", "install", "-U", "pip"])
+subprocess.call([sys.executable, "-m", "pip", "install", "-U", "rich"])
 
-# git clone https://github.com/2jiho/script.git /tmp/jihos_script
+from rich.console import Console
 
-# cd /tmp/jihos_script
-# ls
-bash <(wget -qO- https://raw.githubusercontent.com/2jiho/script/main/init_ubuntu.sh)
+if len(sys.argv) == 2:
+    SUDO_PASSWORD = sys.argv[1]
+else:
+    subprocess.call([sys.executable, "-m", "pip", "install", "-U", "pwinput"])
+    import pwinput
 
-bash <(wget -qO- https://raw.githubusercontent.com/2jiho/script/main/install_flir.sh)
+    SUDO_PASSWORD = pwinput.pwinput("Enter sudo password: ")
 
+console = Console()
+
+apt_packages = [
+    "ca-certificates",
+    "curl",
+    "gnupg",
+    "openssh-server",
+    "wireguard",
+    "resolvconf",
+    "vlc",
+]
+sudo_cmd_list = [
+    "apt update",
+    "apt upgrade -y",
+    "apt install -y " + " ".join(apt_packages),
+    # 우분투 버전 체크 해제 (22.04 업데이트창)
+    "sed -i '/^Prompt=/c\Prompt=never' /etc/update-manager/release-upgrades",
+    # 자동 업데이트 해제
+    "sed -i '/^APT::Periodic::Update-Package-Lists/c\APT::Periodic::Update-Package-Lists \"0\";' /etc/apt/apt.conf.d/20auto-upgrades",
+    "sed -i '/^APT::Periodic::Unattended-Upgrade/c\APT::Periodic::Unattended-Upgrade \"0\";' /etc/apt/apt.conf.d/20auto-upgrades",
+    # apport (충돌 경고) 해제
+    "sed -i '/^enabled=/c\enabled=0' /etc/default/apport",
+    # 프린터 자동 검색 해제
+    "systemctl stop cups-browsed",
+    "systemctl disable cups-browsed",
+]
+
+for cmd in sudo_cmd_list:
+    console.log(f"[bold green]sudo {cmd}")
+    cmd = f"echo {SUDO_PASSWORD} | sudo -S {cmd}"
+    subprocess.call(cmd, shell=True)
+
+cmd_list = [
+    # black screen time 해제
+    "/usr/bin/gsettings set org.gnome.desktop.session idle-delay 0",
+    # screen lock 해제
+    "/usr/bin/gsettings set org.gnome.desktop.screensaver lock-delay 0",
+    "/usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false",
+    "/usr/bin/gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false",
+    "/usr/bin/gsettings set org.gnome.desktop.screensaver show-notifications false",
+    # 절전모드 해제
+    "/usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'",
+    # 전원버튼 액션 해제
+    "/usr/bin/gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'",
+]
+for cmd in cmd_list:
+    console.log(f"[bold green]{cmd}")
+    subprocess.call(cmd, shell=True)
