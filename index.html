@@ -1,4 +1,5 @@
 #!/bin/bash
+# update 2023.06.12 v1
 SUDO_PASSWORD=1
 
 RED='\033[0;31m'
@@ -55,6 +56,7 @@ timestamp_echo 'Disable power button '
 /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
 
 timestamp_echo 'Install docker & nvidia-docker'
+sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" |
