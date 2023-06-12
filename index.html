@@ -95,7 +95,8 @@ if whiptail --yesno "Install spinnaker?" 20 60; then
     sudo apt install -y libswscale-dev libavcodec-dev libavformat-dev
     wget https://flir.netx.net/file/asset/54404/original/attachment -O /tmp/spinnaker-3.1.0.79-amd64-pkg.tar.gz
     tar zxvf /tmp/spinnaker-3.1.0.79-amd64-pkg.tar.gz -C /tmp
-    ./spinnaker-3.0.0.118-amd64/install_spinnaker.sh
+    cd /tmp/spinnaker-3.1.0.79-amd64
+    ./install_spinnaker.sh
 fi
 
 if whiptail --yesno "Reboot?" 20 60; then
