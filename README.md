@@ -2,10 +2,7 @@
 
 ### run script
 ```bash
-# test
-wget -O - https://sh.2jiho.com/ | bash
-
-bash <(wget -qO- [Script URL])
+bash <(wget -qO- https://sh.2jiho.com/)
 
 # example
 bash <(wget -qO- https://raw.githubusercontent.com/2jiho/script/main/init_ubuntu.sh)
