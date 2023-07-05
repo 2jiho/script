@@ -1,5 +1,5 @@
 #!/bin/bash
-# update 2023.06.12 v3
+# update 2023.07.05 v4
 SUDO_PASSWORD=1
 
 RED='\033[0;31m'
@@ -23,6 +23,8 @@ echo ${SUDO_PASSWORD} | sudo -S echo "Automatically entered sudo password"
 timestamp_echo 'Update & Upgrade'
 sudo apt update
 sudo apt upgrade -y
+
+sudo usermod -aG dialout $USER
 
 timestamp_echo 'Install ca-certificates curl gnupg openssh-server wireguard resolvconf vlc'
 sudo apt install -y ca-certificates curl gnupg openssh-server wireguard resolvconf vlc
