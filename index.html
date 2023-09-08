@@ -1,5 +1,5 @@
 #!/bin/bash
-# update 2023.07.05 v4
+# update 2023.09.08 v5
 SUDO_PASSWORD=1
 
 RED='\033[0;31m'
@@ -18,89 +18,124 @@ timestamp_echo() {
     echo -e "${BOLD_BLUE}[$(timestamp)]${NC} ${BOLD_GREEN}$*${NC}"
 }
 
-# init sudo password
-echo ${SUDO_PASSWORD} | sudo -S echo "Automatically entered sudo password"
-timestamp_echo 'Update & Upgrade'
-sudo apt update
-sudo apt upgrade -y
+# select options
+CHOICES=$(
+    whiptail --separate-output --checklist "Choose options" 20 78 10 \
+        "0-1" "Automatically entered sudo password ($SUDO_PASSWORD)" ON \
+        "1-1" "Update & Upgrade" ON \
+        "1-2" "Disable auto update, black screen, etc." ON \
+        "1-3" "Install openssh-server, wireguard, vlc, etc." ON \
+        "1-4" "Add user to dialout group " ON \
+        "2-1" "Install docker & nvidia-docker" ON \
+        "2-2" "Install tailscale" ON \
+        "2-3" "Install nomachine" ON \
+        "3-1" "Install spinnaker" OFF \
+        "0-0" "Reboot" ON \
+        3>&1 1>&2 2>&3
+)
 
-sudo usermod -aG dialout $USER
+# options setup
+if [ -z "$CHOICES" ]; then
+    echo "No option was selected (user hit Cancel or unselected all options)"
+else
+    for CHOICE in $CHOICES; do
+        case "$CHOICE" in
+        "0-1")
+            echo ${SUDO_PASSWORD} | sudo -S echo "Automatically entered sudo password"
+            ;;
+        "1-1")
+            timestamp_echo 'Update & Upgrade'
+            sudo apt update
+            sudo apt upgrade -y
+            ;;
+        "1-2")
+            timestamp_echo 'Disable ubuntu version check'
+            sudo sed -i '/^Prompt=/c\Prompt=never' /etc/update-manager/release-upgrades
 
-timestamp_echo 'Install ca-certificates curl gnupg openssh-server wireguard resolvconf vlc'
-sudo apt install -y ca-certificates curl gnupg openssh-server wireguard resolvconf vlc
+            timestamp_echo 'Disable auto update'
+            sudo sed -i 's/^APT::Periodic::Update-Package-Lists.*/APT::Periodic::Update-Package-Lists "0";/' /etc/apt/apt.conf.d/20auto-upgrades
+            sudo sed -i 's/^APT::Periodic::Unattended-Upgrade.*/APT::Periodic::Unattended-Upgrade "0";/' /etc/apt/apt.conf.d/20auto-upgrades
 
-timestamp_echo 'Disable ubuntu version check'
-sudo sed -i '/^Prompt=/c\Prompt=never' /etc/update-manager/release-upgrades
+            timestamp_echo 'Disable apport'
+            sudo sed -i '/^enabled=/c\enabled=0' /etc/default/apport
 
-timestamp_echo 'Disable auto update'
-sudo sed -i 's/^APT::Periodic::Update-Package-Lists.*/APT::Periodic::Update-Package-Lists "0";/' /etc/apt/apt.conf.d/20auto-upgrades
-sudo sed -i 's/^APT::Periodic::Unattended-Upgrade.*/APT::Periodic::Unattended-Upgrade "0";/' /etc/apt/apt.conf.d/20auto-upgrades
+            timestamp_echo 'Disable printer auto search '
+            sudo systemctl stop cups-browsed
+            sudo systemctl disable cups-browsed
 
-timestamp_echo 'Disable apport'
-sudo sed -i '/^enabled=/c\enabled=0' /etc/default/apport
+            timestamp_echo 'Disable black screen'
+            /usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
 
-timestamp_echo 'Disable printer auto search '
-sudo systemctl stop cups-browsed
-sudo systemctl disable cups-browsed
+            timestamp_echo 'Disable screen lock'
+            /usr/bin/gsettings set org.gnome.desktop.screensaver lock-delay 0
+            /usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
+            /usr/bin/gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
 
-timestamp_echo 'Disable black screen'
-/usr/bin/gsettings set org.gnome.desktop.session idle-delay 0
+            timestamp_echo 'Disable suspend'
+            /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
 
-timestamp_echo 'Disable screen lock'
-/usr/bin/gsettings set org.gnome.desktop.screensaver lock-delay 0
-/usr/bin/gsettings set org.gnome.desktop.screensaver lock-enabled false
-/usr/bin/gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
+            timestamp_echo 'Disable power button'
+            /usr/bin/gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
+            ;;
+        "1-3")
+            timestamp_echo 'Install ca-certificates curl gnupg openssh-server wireguard resolvconf vlc'
+            sudo apt install -y ca-certificates curl gnupg openssh-server wireguard resolvconf vlc
+            ;;
+        "1-4")
+            sudo usermod -aG dialout $USER
+            ;;
+        "2-1")
+            timestamp_echo 'Install docker & nvidia-docker'
+            sudo install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
+            sudo chmod a+r /etc/apt/keyrings/docker.gpg
+            echo \
+                "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" |
+                sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+            distribution=$(
+                . /etc/os-release
+                echo $ID$VERSION_ID
+            ) &&
+                curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor --yes -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg &&
+                curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list |
+                sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' |
+                    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
-timestamp_echo 'Disable suspend'
-/usr/bin/gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
-
-timestamp_echo 'Disable power button '
-/usr/bin/gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
-
-timestamp_echo 'Install docker & nvidia-docker'
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-echo \
-    "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" |
-    sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
-distribution=$(
-    . /etc/os-release
-    echo $ID$VERSION_ID
-) &&
-    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor --yes -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg &&
-    curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list |
-    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' |
-        sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-sudo apt install -y nvidia-container-toolkit
-sudo usermod -aG docker $USER
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-
-timestamp_echo 'Install tailscale'
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
-sudo apt update
-sudo apt install -y tailscale
-
-timestamp_echo 'Install nomachine'
-sudo wget https://www.nomachine.com/free/linux/64/tar -O /usr/nomachine.tar.gz
-sudo tar zxvf /usr/nomachine.tar.gz -C /usr
-sudo /usr/NX/nxserver --install
-
-if whiptail --yesno "Install spinnaker?" 20 60; then
-    timestamp_echo 'Install spinnaker'
-    sudo apt install -y libswscale-dev libavcodec-dev libavformat-dev
-    wget https://flir.netx.net/file/asset/54404/original/attachment -O /tmp/spinnaker-3.1.0.79-amd64-pkg.tar.gz
-    tar zxvf /tmp/spinnaker-3.1.0.79-amd64-pkg.tar.gz -C /tmp
-    cd /tmp/spinnaker-3.1.0.79-amd64
-    ./install_spinnaker.sh
-fi
-
-if whiptail --yesno "Reboot?" 20 60; then
-    sudo reboot
+            sudo apt update
+            sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo apt install -y nvidia-container-toolkit
+            sudo usermod -aG docker $USER
+            sudo nvidia-ctk runtime configure --runtime=docker
+            sudo systemctl restart docker
+            ;;
+        "2-2")
+            timestamp_echo 'Install tailscale'
+            curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+            curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/focal.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
+            sudo apt update
+            sudo apt install -y tailscale
+            ;;
+        "2-3")
+            timestamp_echo 'Install nomachine'
+            sudo wget https://www.nomachine.com/free/linux/64/tar -O /usr/nomachine.tar.gz
+            sudo tar zxvf /usr/nomachine.tar.gz -C /usr
+            sudo /usr/NX/nxserver --install
+            ;;
+        "3-1")
+            timestamp_echo 'Install spinnaker'
+            sudo apt install -y libswscale-dev libavcodec-dev libavformat-dev
+            wget https://flir.netx.net/file/asset/54404/original/attachment -O /tmp/spinnaker-3.1.0.79-amd64-pkg.tar.gz
+            tar zxvf /tmp/spinnaker-3.1.0.79-amd64-pkg.tar.gz -C /tmp
+            cd /tmp/spinnaker-3.1.0.79-amd64
+            ./install_spinnaker.sh
+            ;;
+        "0-0")
+            sudo reboot
+            ;;
+        *)
+            echo "Unsupported item $CHOICE!" >&2
+            ;;
+        esac
+    done
 fi
